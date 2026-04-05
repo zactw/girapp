@@ -81,10 +81,10 @@ export default function Home() {
       setFetchError(geoError);
       return;
     }
-    if (position) {
+    if (position && settingsLoaded) {
       fetchGiraffes();
     }
-  }, [position, geoLoading, geoError, fetchGiraffes]);
+  }, [position, geoLoading, geoError, settingsLoaded, settings.resultCount, fetchGiraffes]);
 
   const isLoading = loadStage === 'geo' || loadStage === 'fetching' || loadStage === 'expanding';
 
