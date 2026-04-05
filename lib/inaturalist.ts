@@ -39,7 +39,7 @@ interface INatObservation {
   positional_accuracy: number | null; // GPS accuracy in meters
 }
 
-async function fetchObservations(params: Record<string, string>, sortByDate = true): Promise<INatObservation[]> {
+async function fetchObservations(params: Record<string, string>, sortByDate = true, pages = 1): Promise<INatObservation[]> {
   const baseParams: Record<string, string> = {
     taxon_name: 'Giraffa',
     per_page: '200',
@@ -53,12 +53,21 @@ async function fetchObservations(params: Record<string, string>, sortByDate = tr
     baseParams.order_by = 'observed_on';
   }
 
-  const qs = new URLSearchParams(baseParams);
-  const url = `https://api.inaturalist.org/v1/observations?${qs}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`iNaturalist API error: ${res.status}`);
-  const data = await res.json();
-  return data.results as INatObservation[];
+  const allResults: INatObservation[] = [];
+
+  for (let page = 1; page <= pages; page++) {
+    const qs = new URLSearchParams({ ...baseParams, page: String(page) });
+    const url = `https://api.inaturalist.org/v1/observations?${qs}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`iNaturalist API error: ${res.status}`);
+    const data = await res.json();
+    allResults.push(...(data.results as INatObservation[]));
+
+    // Stop if we got fewer results than requested (no more pages)
+    if (data.results.length < 200) break;
+  }
+
+  return allResults;
 }
 
 export interface MapBounds {
@@ -72,6 +81,15 @@ export async function getGiraffesInBounds(
   bounds: MapBounds,
   userPos: LatLng
 ): Promise<GiraffeObservation[]> {
+  // Calculate bounds size to determine how many pages to fetch
+  const latSpan = bounds.neLat - bounds.swLat;
+  const lngSpan = bounds.neLng - bounds.swLng;
+  const boundsArea = latSpan * lngSpan;
+
+  // Fetch more pages for larger areas (wide zoom = more giraffes to find)
+  // Small area (<10 sq deg): 1 page, Medium (<100): 2 pages, Large: 3 pages
+  const pages = boundsArea < 10 ? 1 : boundsArea < 100 ? 2 : 3;
+
   // Don't sort by date for geographic searches
   const raw = await fetchObservations({
     swlat: String(bounds.swLat),
@@ -79,7 +97,7 @@ export async function getGiraffesInBounds(
     nelat: String(bounds.neLat),
     nelng: String(bounds.neLng),
     per_page: '200',
-  }, false);
+  }, false, pages);
 
   // Parse all results (no limit for map view)
   return parseAndSort(raw, userPos, raw.length);
