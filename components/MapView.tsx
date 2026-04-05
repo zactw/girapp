@@ -96,11 +96,17 @@ export default function MapView({ userPosition, units, onGiraffesLoaded }: MapVi
   const [loading, setLoading] = useState(true);
 
   const handleGiraffesLoaded = useCallback((newGiraffes: GiraffeObservation[]) => {
-    setGiraffes(newGiraffes);
-    // Pass data up to parent so compass can use it
-    if (onGiraffesLoaded) {
-      onGiraffesLoaded(newGiraffes);
-    }
+    // Accumulate giraffes - merge new with existing, removing duplicates
+    setGiraffes(prev => {
+      const existingIds = new Set(prev.map(g => g.id));
+      const unique = newGiraffes.filter(g => !existingIds.has(g.id));
+      const merged = [...prev, ...unique];
+      // Pass merged data up to parent
+      if (onGiraffesLoaded) {
+        onGiraffesLoaded(merged);
+      }
+      return merged;
+    });
   }, [onGiraffesLoaded]);
 
   return (
