@@ -25,7 +25,7 @@ type LoadStage = 'geo' | 'fetching' | 'expanding' | 'done' | 'error';
 
 export default function Home() {
   const { position, error: geoError, loading: geoLoading } = useGeolocation();
-  const { heading } = useCompassHeading();
+  const { heading, permissionState, requestPermission } = useCompassHeading();
   const { settings, setSettings, isLoaded: settingsLoaded } = useSettings();
 
   const [giraffes, setGiraffes] = useState<GiraffeObservation[]>([]);
@@ -198,7 +198,12 @@ export default function Home() {
 
             {/* Compass View */}
             {viewMode === 'compass' && giraffes.length > 0 && (
-              <Compass giraffes={giraffes} heading={heading} />
+              <Compass
+                  giraffes={giraffes}
+                  heading={heading}
+                  needsPermission={permissionState === 'unknown'}
+                  onRequestPermission={requestPermission}
+                />
             )}
 
             {/* Compass - No giraffes nearby */}

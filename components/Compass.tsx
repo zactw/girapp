@@ -6,6 +6,8 @@ import { bearingToCardinal, formatDistance } from '@/lib/geo';
 interface CompassProps {
   giraffes: GiraffeObservation[];
   heading: number;
+  needsPermission?: boolean;
+  onRequestPermission?: () => void;
 }
 
 const COMPASS_SIZE = 320;
@@ -104,13 +106,33 @@ function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
 export default function Compass({
   giraffes,
   heading,
+  needsPermission,
+  onRequestPermission,
 }: CompassProps) {
   const cardinal = bearingToCardinal(heading);
+
+  const handleTap = () => {
+    if (needsPermission && onRequestPermission) {
+      onRequestPermission();
+    }
+  };
 
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Compass SVG */}
-      <div className="relative">
+      <div
+        className={`relative ${needsPermission ? 'cursor-pointer' : ''}`}
+        onClick={handleTap}
+      >
+        {/* Permission overlay */}
+        {needsPermission && (
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-white/60 rounded-full" style={{ width: COMPASS_SIZE, height: COMPASS_SIZE }}>
+            <div className="text-center px-8">
+              <p className="text-gray-600 text-sm font-medium">Tap to enable</p>
+              <p className="text-gray-400 text-xs mt-1">compass rotation</p>
+            </div>
+          </div>
+        )}
         <svg
           width={COMPASS_SIZE}
           height={COMPASS_SIZE}
