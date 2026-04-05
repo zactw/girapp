@@ -114,8 +114,8 @@ export async function getNearbyGiraffes(
   return allResults.slice(0, limit);
 }
 
-export async function getGlobalGiraffes(userPos: LatLng, limit = 3): Promise<GiraffeObservation[]> {
-  const raw = await fetchObservations({ per_page: '50' });
+export async function getGlobalGiraffes(userPos: LatLng, limit = 10): Promise<GiraffeObservation[]> {
+  const raw = await fetchObservations({ per_page: '100' });
   return parseAndSort(raw, userPos, limit);
 }
 

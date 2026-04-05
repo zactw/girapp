@@ -56,10 +56,17 @@ export default function Home() {
       let results = await getGiraffesInBounds(bounds, position);
       results = results.slice(0, settings.resultCount);
 
-      if (results.length === 0) {
+      // If we don't have enough local results, expand to global search
+      if (results.length < settings.resultCount) {
         setLoadStage('expanding');
-        results = await getGlobalGiraffes(position, settings.resultCount);
-        setIsGlobal(true);
+        const globalResults = await getGlobalGiraffes(position, settings.resultCount);
+        // Merge local + global, removing duplicates, sorted by distance
+        const localIds = new Set(results.map(r => r.id));
+        const uniqueGlobal = globalResults.filter(g => !localIds.has(g.id));
+        results = [...results, ...uniqueGlobal]
+          .sort((a, b) => a.distanceFeet - b.distanceFeet)
+          .slice(0, settings.resultCount);
+        setIsGlobal(results.some(r => !localIds.has(r.id)));
       }
 
       setGiraffes(results);
