@@ -201,6 +201,7 @@ export default function Home() {
               <Compass
                   giraffes={giraffes}
                   heading={heading}
+                  units={settings.units}
                   needsPermission={permissionState === 'unknown'}
                   onRequestPermission={requestPermission}
                 />

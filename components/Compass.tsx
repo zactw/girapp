@@ -6,6 +6,7 @@ import { bearingToCardinal, formatDistance } from '@/lib/geo';
 interface CompassProps {
   giraffes: GiraffeObservation[];
   heading: number;
+  units?: 'imperial' | 'metric';
   needsPermission?: boolean;
   onRequestPermission?: () => void;
 }
@@ -39,9 +40,10 @@ interface WaypointProps {
   obs: GiraffeObservation;
   heading: number;
   index: number;
+  units: 'imperial' | 'metric';
 }
 
-function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
+function GiraffeWaypoint({ obs, heading, index, units }: WaypointProps) {
   const relBearing = (obs.bearing - heading + 360) % 360;
   const angle = degToRad(relBearing) - Math.PI / 2;
 
@@ -97,7 +99,7 @@ function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
         fill="#1a1a1a"
         style={{ pointerEvents: 'none' }}
       >
-        {formatDistance(obs.distanceFeet)}
+        {formatDistance(obs.distanceFeet, units)}
       </text>
     </g>
   );
@@ -106,6 +108,7 @@ function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
 export default function Compass({
   giraffes,
   heading,
+  units = 'imperial',
   needsPermission,
   onRequestPermission,
 }: CompassProps) {
@@ -256,7 +259,7 @@ export default function Compass({
 
           {/* Giraffe waypoints */}
           {giraffes.map((obs, i) => (
-            <GiraffeWaypoint key={obs.id} obs={obs} heading={heading} index={i} />
+            <GiraffeWaypoint key={obs.id} obs={obs} heading={heading} index={i} units={units} />
           ))}
         </svg>
       </div>
