@@ -1,12 +1,11 @@
 'use client';
 
 import { GiraffeObservation } from '@/lib/inaturalist';
-import { bearingToCardinal, formatDistance } from '@/lib/geo';
+import { bearingToCardinal } from '@/lib/geo';
 
 interface CompassProps {
   giraffes: GiraffeObservation[];
   heading: number;
-  units?: 'imperial' | 'metric';
   needsPermission?: boolean;
   onRequestPermission?: () => void;
 }
@@ -40,10 +39,9 @@ interface WaypointProps {
   obs: GiraffeObservation;
   heading: number;
   index: number;
-  units: 'imperial' | 'metric';
 }
 
-function GiraffeWaypoint({ obs, heading, index, units }: WaypointProps) {
+function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
   const relBearing = (obs.bearing - heading + 360) % 360;
   const angle = degToRad(relBearing) - Math.PI / 2;
 
@@ -55,51 +53,29 @@ function GiraffeWaypoint({ obs, heading, index, units }: WaypointProps) {
   const x = CENTER + waypointRadius * Math.cos(angle);
   const y = CENTER + waypointRadius * Math.sin(angle);
 
-  const colors = ['#f59e0b', '#d97706', '#b45309'];
+  // Match the rank badge colors from GiraffeCard (amber-500, amber-400, amber-300)
+  const colors = ['#f59e0b', '#fbbf24', '#fcd34d'];
   const color = colors[index] || colors[0];
 
   return (
-    <g>
+    <g transform={`translate(${x}, ${y})`}>
       {/* Glow ring */}
       <circle
-        cx={x}
-        cy={y}
+        cx={0}
+        cy={0}
         r={18}
         fill={color}
         opacity={0.15}
       />
       {/* Giraffe emoji */}
-      <foreignObject
-        x={x - 16}
-        y={y - 18}
-        width={32}
-        height={32}
-        style={{ overflow: 'visible', pointerEvents: 'none' }}
-      >
-        <div
-          style={{
-            fontSize: '24px',
-            lineHeight: '32px',
-            textAlign: 'center',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-            userSelect: 'none',
-          }}
-        >
-          🦒
-        </div>
-      </foreignObject>
-      {/* Distance label */}
       <text
-        x={x}
-        y={y + 22}
+        x={0}
+        y={6}
         textAnchor="middle"
-        fontSize="9"
-        fontFamily="Inter, sans-serif"
-        fontWeight="600"
-        fill="#1a1a1a"
-        style={{ pointerEvents: 'none' }}
+        fontSize="24"
+        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}
       >
-        {formatDistance(obs.distanceFeet, units)}
+        🦒
       </text>
     </g>
   );
@@ -108,7 +84,6 @@ function GiraffeWaypoint({ obs, heading, index, units }: WaypointProps) {
 export default function Compass({
   giraffes,
   heading,
-  units = 'imperial',
   needsPermission,
   onRequestPermission,
 }: CompassProps) {
@@ -259,7 +234,7 @@ export default function Compass({
 
           {/* Giraffe waypoints */}
           {giraffes.map((obs, i) => (
-            <GiraffeWaypoint key={obs.id} obs={obs} heading={heading} index={i} units={units} />
+            <GiraffeWaypoint key={obs.id} obs={obs} heading={heading} index={i} />
           ))}
         </svg>
       </div>
