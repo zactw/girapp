@@ -24,7 +24,20 @@ export function getDistanceFeet(from: LatLng, to: LatLng): number {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export function formatDistance(feet: number): string {
+export function formatDistance(feet: number, units: 'imperial' | 'metric' = 'imperial'): string {
+  if (units === 'metric') {
+    const meters = feet * 0.3048;
+    if (meters < 1000) {
+      return `${Math.round(meters)} m`;
+    }
+    const km = meters / 1000;
+    if (km < 10) {
+      return `${km.toFixed(1)} km`;
+    }
+    return `${Math.round(km)} km`;
+  }
+
+  // Imperial
   if (feet < 1000) {
     return `${Math.round(feet)} ft`;
   }

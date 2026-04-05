@@ -1,5 +1,11 @@
 import { LatLng, getDistanceFeet, getBearing } from './geo';
 
+export interface GiraffePhoto {
+  id: number;
+  url: string; // square.jpg - replace with medium.jpg or small.jpg for other sizes
+  attribution: string;
+}
+
 export interface GiraffeObservation {
   id: number;
   species_guess: string | null;
@@ -10,6 +16,12 @@ export interface GiraffeObservation {
   position: LatLng;
   distanceFeet: number;
   bearing: number;
+  // Metadata
+  uri: string; // Link to iNaturalist observation
+  photos: GiraffePhoto[];
+  user: string | null; // Observer's login name
+  quality_grade: 'research' | 'needs_id' | 'casual';
+  captive: boolean; // true = zoo/captive, false = wild
 }
 
 interface INatObservation {
@@ -19,17 +31,29 @@ interface INatObservation {
   observed_on: string | null;
   location: string | null;
   place_guess: string | null;
+  uri: string;
+  photos: Array<{ id: number; url: string; attribution: string }>;
+  user: { login: string } | null;
+  quality_grade: 'research' | 'needs_id' | 'casual';
+  captive: boolean;
+  positional_accuracy: number | null; // GPS accuracy in meters
 }
 
-async function fetchObservations(params: Record<string, string>): Promise<INatObservation[]> {
-  const qs = new URLSearchParams({
+async function fetchObservations(params: Record<string, string>, sortByDate = true): Promise<INatObservation[]> {
+  const baseParams: Record<string, string> = {
     taxon_name: 'Giraffa',
-    per_page: '50',
-    order: 'desc',
-    order_by: 'observed_on',
+    per_page: '200',
     geoprivacy: 'open',
     ...params,
-  });
+  };
+
+  // Only sort by date if requested (skip for geographic searches)
+  if (sortByDate) {
+    baseParams.order = 'desc';
+    baseParams.order_by = 'observed_on';
+  }
+
+  const qs = new URLSearchParams(baseParams);
   const url = `https://api.inaturalist.org/v1/observations?${qs}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`iNaturalist API error: ${res.status}`);
@@ -37,25 +61,129 @@ async function fetchObservations(params: Record<string, string>): Promise<INatOb
   return data.results as INatObservation[];
 }
 
+export interface MapBounds {
+  swLat: number;
+  swLng: number;
+  neLat: number;
+  neLng: number;
+}
+
+export async function getGiraffesInBounds(
+  bounds: MapBounds,
+  userPos: LatLng
+): Promise<GiraffeObservation[]> {
+  // Don't sort by date for geographic searches
+  const raw = await fetchObservations({
+    swlat: String(bounds.swLat),
+    swlng: String(bounds.swLng),
+    nelat: String(bounds.neLat),
+    nelng: String(bounds.neLng),
+    per_page: '200',
+  }, false);
+
+  // Parse all results (no limit for map view)
+  return parseAndSort(raw, userPos, raw.length);
+}
+
 export async function getNearbyGiraffes(
   userPos: LatLng,
-  radiusKm = 5000
+  radiusKm = 500,
+  limit = 3
 ): Promise<GiraffeObservation[]> {
-  const raw = await fetchObservations({
-    lat: String(userPos.lat),
-    lng: String(userPos.lng),
-    radius: String(radiusKm),
-  });
+  // Use bounding box for consistent results with map view
+  const kmToDeg = (km: number) => km / 111;
+  const searchRadius = Math.min(radiusKm, 500); // cap at 500km
+  const latDelta = kmToDeg(searchRadius);
+  const lngDelta = kmToDeg(searchRadius) / Math.cos(userPos.lat * Math.PI / 180);
 
-  return parseAndSort(raw, userPos);
+  const bounds: MapBounds = {
+    swLat: userPos.lat - latDelta,
+    swLng: userPos.lng - lngDelta,
+    neLat: userPos.lat + latDelta,
+    neLng: userPos.lng + lngDelta,
+  };
+
+  // Use same function as map view for consistent results
+  const allResults = await getGiraffesInBounds(bounds, userPos);
+
+  // Return top N by distance
+  if (allResults.length === 0) {
+    return getGlobalGiraffes(userPos, limit);
+  }
+
+  return allResults.slice(0, limit);
 }
 
-export async function getGlobalGiraffes(userPos: LatLng): Promise<GiraffeObservation[]> {
+export async function getGlobalGiraffes(userPos: LatLng, limit = 3): Promise<GiraffeObservation[]> {
   const raw = await fetchObservations({ per_page: '50' });
-  return parseAndSort(raw, userPos);
+  return parseAndSort(raw, userPos, limit);
 }
 
-function parseAndSort(raw: INatObservation[], userPos: LatLng): GiraffeObservation[] {
+// Check if coordinates are in Africa (where wild giraffes exist)
+function isInAfrica(lat: number, lng: number): boolean {
+  // Rough bounding box for Africa
+  return lat >= -35 && lat <= 37 && lng >= -18 && lng <= 52;
+}
+
+// Keywords that indicate a legitimate zoo/sanctuary location
+// Be specific - "park" alone matches city names like "Litchfield Park"
+const ZOO_KEYWORDS = [
+  'zoo',
+  'safari park',
+  'wildlife world',
+  'wildlife park',
+  'wildlife center',
+  'wildlife sanctuary',
+  'animal kingdom',
+  'animal sanctuary',
+  'animal park',
+  'safari',
+  'nature reserve',
+  'game reserve',
+  'conservation center',
+  'aquarium',
+  'wild animal',
+  'living desert',
+];
+
+function hasZooInPlaceName(placeGuess: string | null): boolean {
+  if (!placeGuess) return false;
+  const lower = placeGuess.toLowerCase();
+  return ZOO_KEYWORDS.some(keyword => lower.includes(keyword));
+}
+
+// Validate observation quality
+function isValidObservation(obs: INatObservation, lat: number, lng: number): boolean {
+  // Must have at least one photo for verification
+  if (!obs.photos || obs.photos.length === 0) return false;
+
+  // Filter out observations with very poor GPS accuracy (>1km)
+  if (obs.positional_accuracy && obs.positional_accuracy > 1000) {
+    return false;
+  }
+
+  // In Africa - allow wild giraffes
+  if (isInAfrica(lat, lng)) {
+    return true;
+  }
+
+  // Outside Africa - MUST be captive AND have a zoo-like place name
+  // This filters out the random scattered observations with bad location data
+  if (!obs.captive) {
+    return false;
+  }
+
+  // For captive observations outside Africa, require zoo in place name
+  // OR very tight GPS accuracy at a known zoo location
+  if (!hasZooInPlaceName(obs.place_guess)) {
+    // Allow if place explicitly says "Phoenix Zoo" etc, but reject generic "Maricopa County"
+    return false;
+  }
+
+  return true;
+}
+
+function parseAndSort(raw: INatObservation[], userPos: LatLng, limit = 3): GiraffeObservation[] {
   const results: GiraffeObservation[] = [];
   for (const obs of raw) {
     if (!obs.location) continue;
@@ -64,6 +192,10 @@ function parseAndSort(raw: INatObservation[], userPos: LatLng): GiraffeObservati
     const lat = parseFloat(parts[0]);
     const lng = parseFloat(parts[1]);
     if (isNaN(lat) || isNaN(lng)) continue;
+
+    // Apply validation heuristics
+    if (!isValidObservation(obs, lat, lng)) continue;
+
     const position: LatLng = { lat, lng };
     results.push({
       id: obs.id,
@@ -75,10 +207,26 @@ function parseAndSort(raw: INatObservation[], userPos: LatLng): GiraffeObservati
       position,
       distanceFeet: getDistanceFeet(userPos, position),
       bearing: getBearing(userPos, position),
+      uri: obs.uri,
+      photos: obs.photos.map(p => ({ id: p.id, url: p.url, attribution: p.attribution })),
+      user: obs.user?.login ?? null,
+      quality_grade: obs.quality_grade,
+      captive: obs.captive,
     });
   }
-  results.sort((a, b) => a.distanceFeet - b.distanceFeet);
-  return results.slice(0, 3);
+
+  // Sort by distance, but prefer research-grade observations
+  results.sort((a, b) => {
+    // Primary: distance
+    const distDiff = a.distanceFeet - b.distanceFeet;
+    // Secondary: quality (research > needs_id > casual)
+    const qualityOrder = { research: 0, needs_id: 1, casual: 2 };
+    const qualDiff = qualityOrder[a.quality_grade] - qualityOrder[b.quality_grade];
+    // Weight distance more heavily, but break ties with quality
+    return distDiff + qualDiff * 1000;
+  });
+
+  return results.slice(0, limit);
 }
 
 export function formatObservedOn(dateStr: string | null): string {

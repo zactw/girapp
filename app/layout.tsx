@@ -14,8 +14,8 @@ export const metadata: Metadata = {
     title: "Girapp",
   },
   icons: {
-    apple: "/icon-192.png",
-    icon: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
+    icon: "/girappicon.png",
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
@@ -41,7 +41,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#f8f8f6" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className={`${inter.className} bg-[#f8f8f6] antialiased`}>

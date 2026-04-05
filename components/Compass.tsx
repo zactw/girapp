@@ -1,21 +1,22 @@
 'use client';
 
-import React from 'react';
 import { GiraffeObservation } from '@/lib/inaturalist';
 import { bearingToCardinal, formatDistance } from '@/lib/geo';
 
 interface CompassProps {
   giraffes: GiraffeObservation[];
   heading: number;
-  compassAvailable: boolean;
-  onRequestPermission?: () => void;
 }
 
 const COMPASS_SIZE = 320;
 const CENTER = COMPASS_SIZE / 2;
 const OUTER_RADIUS = 140;
 const INNER_RADIUS = 110;
-const WAYPOINT_RADIUS = 128;
+
+// Distance scaling: 10 miles = outer edge, closer = near center
+const MAX_DISTANCE_FEET = 10 * 5280; // 10 miles in feet
+const MIN_WAYPOINT_RADIUS = 70; // Don't overlap with center (r=60)
+const MAX_WAYPOINT_RADIUS = 128; // Edge of compass
 
 const DEGREE_MARKS = [
   { angle: 0, label: 'N', major: true },
@@ -41,15 +42,21 @@ interface WaypointProps {
 function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
   const relBearing = (obs.bearing - heading + 360) % 360;
   const angle = degToRad(relBearing) - Math.PI / 2;
-  const x = CENTER + WAYPOINT_RADIUS * Math.cos(angle);
-  const y = CENTER + WAYPOINT_RADIUS * Math.sin(angle);
+
+  // Calculate proportional radius based on distance
+  // Closer = smaller radius (near center), farther = larger radius (near edge)
+  const distanceRatio = Math.min(obs.distanceFeet / MAX_DISTANCE_FEET, 1);
+  const waypointRadius = MIN_WAYPOINT_RADIUS + distanceRatio * (MAX_WAYPOINT_RADIUS - MIN_WAYPOINT_RADIUS);
+
+  const x = CENTER + waypointRadius * Math.cos(angle);
+  const y = CENTER + waypointRadius * Math.sin(angle);
 
   const colors = ['#f59e0b', '#d97706', '#b45309'];
   const color = colors[index] || colors[0];
 
   return (
     <g>
-      {/* Subtle glow ring behind emoji */}
+      {/* Glow ring */}
       <circle
         cx={x}
         cy={y}
@@ -57,6 +64,7 @@ function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
         fill={color}
         opacity={0.15}
       />
+      {/* Giraffe emoji */}
       <foreignObject
         x={x - 16}
         y={y - 18}
@@ -69,7 +77,7 @@ function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
             fontSize: '24px',
             lineHeight: '32px',
             textAlign: 'center',
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
             userSelect: 'none',
           }}
         >
@@ -96,8 +104,6 @@ function GiraffeWaypoint({ obs, heading, index }: WaypointProps) {
 export default function Compass({
   giraffes,
   heading,
-  compassAvailable,
-  onRequestPermission,
 }: CompassProps) {
   const cardinal = bearingToCardinal(heading);
 
@@ -233,15 +239,6 @@ export default function Compass({
         </svg>
       </div>
 
-      {/* Compass status */}
-      {!compassAvailable && (
-        <button
-          onClick={onRequestPermission}
-          className="text-sm text-amber-600 underline underline-offset-2 hover:text-amber-700 transition-colors"
-        >
-          📱 Tap to enable compass rotation
-        </button>
-      )}
     </div>
   );
 }
