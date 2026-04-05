@@ -9,7 +9,7 @@ import { SettingsIcon, RefreshIcon, CompassIcon, MapIcon } from '@/components/Ic
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useCompassHeading } from '@/hooks/useCompassHeading';
 import { useSettings } from '@/hooks/useSettings';
-import { GiraffeObservation, getGiraffesInBounds, getGlobalGiraffes, MapBounds } from '@/lib/inaturalist';
+import { GiraffeObservation, getGiraffesInBounds, MapBounds } from '@/lib/inaturalist';
 
 const MapView = dynamic(() => import('@/components/MapView'), {
   ssr: false,
@@ -35,16 +35,6 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('compass');
 
-  const calculateBounds = useCallback((pos: { lat: number; lng: number }): MapBounds => {
-    const delta = 0.5;
-    return {
-      swLat: pos.lat - delta,
-      swLng: pos.lng - delta,
-      neLat: pos.lat + delta,
-      neLng: pos.lng + delta,
-    };
-  }, []);
-
   const fetchGiraffes = useCallback(async () => {
     if (!position || !settingsLoaded) return;
     setFetchError(null);
@@ -52,23 +42,37 @@ export default function Home() {
     setIsGlobal(false);
 
     try {
-      const bounds = calculateBounds(position);
-      let results = await getGiraffesInBounds(bounds, position);
-      results = results.slice(0, settings.resultCount);
+      // Progressive search - expand bounds until we have enough results
+      const searchDeltas = [0.5, 2, 5, 10, 30, 90]; // degrees (~35mi, 140mi, 350mi, 700mi, 2100mi, global)
+      let results: GiraffeObservation[] = [];
+      let expandedSearch = false;
 
-      // If we don't have enough local results, expand to global search
-      if (results.length < settings.resultCount) {
-        setLoadStage('expanding');
-        const globalResults = await getGlobalGiraffes(position, settings.resultCount);
-        // Merge local + global, removing duplicates, sorted by distance
-        const localIds = new Set(results.map(r => r.id));
-        const uniqueGlobal = globalResults.filter(g => !localIds.has(g.id));
-        results = [...results, ...uniqueGlobal]
+      for (const delta of searchDeltas) {
+        if (results.length >= settings.resultCount) break;
+
+        if (delta > 0.5) {
+          setLoadStage('expanding');
+          expandedSearch = true;
+        }
+
+        const bounds: MapBounds = {
+          swLat: position.lat - delta,
+          swLng: position.lng - delta,
+          neLat: position.lat + delta,
+          neLng: position.lng + delta,
+        };
+
+        const newResults = await getGiraffesInBounds(bounds, position);
+
+        // Merge with existing, removing duplicates
+        const existingIds = new Set(results.map(r => r.id));
+        const unique = newResults.filter(r => !existingIds.has(r.id));
+        results = [...results, ...unique]
           .sort((a, b) => a.distanceFeet - b.distanceFeet)
           .slice(0, settings.resultCount);
-        setIsGlobal(results.some(r => !localIds.has(r.id)));
       }
 
+      setIsGlobal(expandedSearch);
       setGiraffes(results);
       setLoadStage('done');
     } catch (err) {
@@ -76,7 +80,7 @@ export default function Home() {
       setFetchError(err instanceof Error ? err.message : 'Failed to fetch giraffes');
       setLoadStage('error');
     }
-  }, [position, settings.resultCount, settingsLoaded, calculateBounds]);
+  }, [position, settings.resultCount, settingsLoaded]);
 
   useEffect(() => {
     if (geoLoading) {
