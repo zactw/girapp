@@ -244,17 +244,24 @@ export default function Home() {
             )}
 
             {/* Attribution */}
-            <p className="text-[11px] text-gray-300 text-center pb-4 font-light">
-              Data from{' '}
-              <a
-                href="https://www.inaturalist.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-gray-400 transition-colors"
-              >
-                iNaturalist
-              </a>
-            </p>
+            <div className="text-center pb-4">
+              <p className="text-[11px] text-gray-300 font-light">
+                Data from{' '}
+                <a
+                  href="https://www.inaturalist.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gray-400 transition-colors"
+                >
+                  iNaturalist
+                </a>
+              </p>
+              <p className="text-[11px] text-gray-300 mt-1 font-light">
+                <a href="/terms" className="underline hover:text-gray-400 transition-colors">
+                  Terms of Service
+                </a>
+              </p>
+            </div>
           </>
         )}
       </div>
