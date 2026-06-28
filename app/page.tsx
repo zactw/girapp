@@ -104,10 +104,10 @@ export default function Home() {
       {/* Animated Banner */}
       <div className="w-full bg-amber-500 text-white py-2 overflow-hidden">
         <div className="animate-marquee whitespace-nowrap">
-          <span className="mx-8">🤍 Happy Birthday Peanut! 🥜</span>
-          <span className="mx-8">🤍 Happy Birthday Peanut! 🥜</span>
-          <span className="mx-8">🤍 Happy Birthday Peanut! 🥜</span>
-          <span className="mx-8">🤍 Happy Birthday Peanut! 🥜</span>
+          <span className="mx-8">❤️ Good luck in DC bean 🇺🇸</span>
+          <span className="mx-8">❤️ Good luck in DC bean 🇺🇸</span>
+          <span className="mx-8">❤️ Good luck in DC bean 🇺🇸</span>
+          <span className="mx-8">❤️ Good luck in DC bean 🇺🇸</span>
         </div>
       </div>
 
