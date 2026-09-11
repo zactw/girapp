@@ -18,7 +18,7 @@ export default function TermsPage() {
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
             Girapp — Terms of Service
           </h1>
-          <p className="text-sm text-gray-400 mt-1">Effective: June 2026</p>
+          <p className="text-sm text-gray-400 mt-1">Effective: September 2026</p>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -31,8 +31,13 @@ export default function TermsPage() {
               </h2>
             </div>
             <div className="px-5 py-4 text-sm text-gray-600 leading-relaxed">
-              By using Girapp (&quot;the App&quot;), you agree to these Terms of Service.
-              If you do not agree, please stop using the App.
+              By using Girapp (&quot;the App&quot;), you agree to these Terms of Service
+              and our{" "}
+              <Link href="/privacy" className="text-amber-600 underline hover:text-amber-800">
+                Privacy Policy
+              </Link>
+              . If you do not agree, please stop using the App.
+              Girapp is operated by <strong>The Tighlman Group LLC</strong>.
             </div>
           </section>
 
@@ -98,12 +103,18 @@ export default function TermsPage() {
             <div className="px-5 py-4 text-sm text-gray-600 leading-relaxed space-y-2">
               <p>
                 Girapp requests your device&apos;s GPS location solely to calculate
-                distances to nearby giraffe sightings. Your location is
-                processed entirely in your browser and is <strong>not stored,
-                transmitted to our servers, or shared with any third party</strong>.
+                distances to nearby giraffe sightings. Precise coordinates are
+                processed in your browser and are <strong>not stored on our
+                servers</strong>. A search area derived from your location is sent
+                to the iNaturalist API so the App can show public observations.
               </p>
               <p>
-                We do not collect, store, or sell any personal information.
+                Device compass / orientation data stays on your device. Details
+                are in our{" "}
+                <Link href="/privacy" className="text-amber-600 underline hover:text-amber-800">
+                  Privacy Policy
+                </Link>
+                .
               </p>
             </div>
           </section>
@@ -147,7 +158,7 @@ export default function TermsPage() {
               </h2>
             </div>
             <div className="px-5 py-4 text-sm text-gray-600 leading-relaxed">
-              Girapp uses the{" "}
+              Girapp is hosted by Vercel and uses the{" "}
               <a
                 href="https://www.inaturalist.org/pages/api+reference"
                 target="_blank"
@@ -156,8 +167,8 @@ export default function TermsPage() {
               >
                 iNaturalist API
               </a>{" "}
-              to retrieve wildlife observation data. iNaturalist is a separate
-              service with its own{" "}
+              to retrieve wildlife observation data. We do not operate our own
+              sightings database. iNaturalist is a separate service with its own{" "}
               <a
                 href="https://www.inaturalist.org/pages/terms"
                 target="_blank"
@@ -207,12 +218,25 @@ export default function TermsPage() {
               </h2>
             </div>
             <div className="px-5 py-4 text-sm text-gray-600 leading-relaxed">
-              Questions about these Terms? Reach out at{" "}
+              Girapp is operated by <strong>The Tighlman Group LLC</strong>,
+              3522 S Juniper St, Tempe, AZ 85282. Questions about these Terms
+              or our{" "}
+              <Link href="/privacy" className="text-amber-600 underline hover:text-amber-800">
+                Privacy Policy
+              </Link>
+              ? Email{" "}
               <a
-                href="mailto:zac@graspd.ai"
+                href="mailto:contact@tighlmangroup.com"
                 className="text-amber-600 underline hover:text-amber-800"
               >
-                zac@graspd.ai
+                contact@tighlmangroup.com
+              </a>
+              {" "}or{" "}
+              <a
+                href="mailto:zachary.williams@tighlmangroup.com"
+                className="text-amber-600 underline hover:text-amber-800"
+              >
+                zachary.williams@tighlmangroup.com
               </a>
               .
             </div>
@@ -224,6 +248,9 @@ export default function TermsPage() {
         <div className="mt-8 flex justify-center gap-6 text-sm text-gray-400">
           <Link href="/" className="hover:text-amber-600 transition-colors">
             ← Back to App
+          </Link>
+          <Link href="/privacy" className="hover:text-amber-600 transition-colors">
+            Privacy Policy
           </Link>
         </div>
 
