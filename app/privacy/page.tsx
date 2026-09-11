@@ -35,7 +35,8 @@ export default function PrivacyPage() {
             <div className="px-5 py-4 text-sm text-gray-600 leading-relaxed space-y-2">
               <p>
                 Girapp (&quot;the App,&quot; &quot;the Service,&quot; or &quot;the System&quot;) is operated by{" "}
-                <strong>The Tighlman Group LLC</strong> (&quot;we,&quot; &quot;us,&quot; or &quot;TG LLC&quot;).
+                <strong>The Tighlman Group LLC</strong>
+                {" "}(&quot;we,&quot; &quot;us,&quot; or &quot;TG LLC&quot;).
               </p>
               <p>
                 3522 S Juniper St<br />

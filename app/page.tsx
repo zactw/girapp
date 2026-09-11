@@ -244,7 +244,7 @@ export default function Home() {
             )}
 
             {/* Attribution */}
-            <div className="text-center pb-4">
+            <div className="text-center">
               <p className="text-[11px] text-gray-300 font-light">
                 Data from{' '}
                 <a
@@ -256,18 +256,21 @@ export default function Home() {
                   iNaturalist
                 </a>
               </p>
-              <p className="text-[11px] text-gray-300 mt-1 font-light">
-                <a href="/terms" className="underline hover:text-gray-400 transition-colors">
-                  Terms of Service
-                </a>
-                {" · "}
-                <a href="/privacy" className="underline hover:text-gray-400 transition-colors">
-                  Privacy Policy
-                </a>
-              </p>
             </div>
           </>
         )}
+
+        <div className="text-center pb-4">
+          <p className="text-[11px] text-gray-300 font-light">
+            <a href="/terms" className="underline hover:text-gray-400 transition-colors">
+              Terms of Service
+            </a>
+            {" · "}
+            <a href="/privacy" className="underline hover:text-gray-400 transition-colors">
+              Privacy Policy
+            </a>
+          </p>
+        </div>
       </div>
 
       {/* Settings Panel */}
